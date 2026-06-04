@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Smart Inventory Dashboard</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+            font-family:Arial;
+            background:linear-gradient(135deg,#1f1c2c,#928dab);
+            min-height:100vh;
+            color:white;
+            padding-bottom:50px;
+        }
+
+        h1{
+            text-align:center;
+            padding:30px;
+            font-size:55px;
+        }
+
+        .top-buttons{
+            width:95%;
+            margin:auto;
+            display:flex;
+            justify-content:center;
+            gap:20px;
+            flex-wrap:wrap;
+        }
+
+        .stats-container{
+            display:flex;
+            justify-content:center;
+            gap:20px;
+            flex-wrap:wrap;
+            margin:25px;
+        }
+
+        .stat-box{
+            width:240px;
+            padding:25px;
+            border-radius:25px;
+            background:rgba(255,255,255,0.12);
+            backdrop-filter:blur(10px);
+            text-align:center;
+            box-shadow:0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .stat-box h3{
+            margin-bottom:15px;
+        }
+
+        .stat-box p{
+            font-size:40px;
+            color:#00ffd5;
+            font-weight:bold;
+        }
+
+        .main-grid{
+            width:95%;
+            margin:auto;
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:25px;
+        }
+
+        .box{
+            background:rgba(255,255,255,0.12);
+            backdrop-filter:blur(10px);
+            border-radius:25px;
+            padding:25px;
+            box-shadow:0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .full-width{
+            grid-column:1 / span 2;
+        }
+
+        h2{
+            margin-bottom:20px;
+        }
+
+        input,select{
+            width:100%;
+            padding:14px;
+            margin-top:10px;
+            border:none;
+            border-radius:15px;
+            font-size:17px;
+            background:rgba(255,255,255,0.2);
+            color:white;
+        }
+
+        input::placeholder{
+            color:#ddd;
+        }
+
+        option{
+            color:black;
+        }
+
+        button{
+            width:100%;
+            padding:14px;
+            margin-top:15px;
+            border:none;
+            border-radius:15px;
+            font-size:17px;
+            font-weight:bold;
+            cursor:pointer;
+            color:white;
+            background:linear-gradient(45deg,#ff00cc,#3333ff);
+        }
+
+        button:hover{
+            transform:scale(1.02);
+        }
+
+        ul{
+            list-style:none;
+            margin-top:15px;
+        }
+
+        li{
+            background:rgba(255,255,255,0.12);
+            margin-top:10px;
+            padding:15px;
+            border-radius:15px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        .low-stock{
+            border-left:6px solid red;
+            color:#ffb3b3;
+        }
+
+        .delete-btn{
+            width:auto;
+            padding:10px 15px;
+            background:red;
+            margin:0;
+        }
+
+        .chart-container{
+            width:100%;
+            height:400px;
+        }
+
+        @media(max-width:900px){
+
+            .main-grid{
+                grid-template-columns:1fr;
+            }
+
+            .full-width{
+                grid-column:auto;
+            }
+
+            h1{
+                font-size:38px;
+            }
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<h1>🚀 Smart Inventory Dashboard</h1>
+
+<!-- EXPORT BUTTONS -->
+
+<div class="top-buttons">
+
+    <button onclick="exportInventory()">
+        📁 Export Inventory CSV
+    </button>
+
+    <button onclick="exportTransactions()">
+        📄 Export Transactions CSV
+    </button>
+
+</div>
+
+<!-- STATS -->
+
+<div class="stats-container">
+
+    <div class="stat-box">
+        <h3>Total Products</h3>
+        <p id="totalProducts">0</p>
+    </div>
+
+    <div class="stat-box">
+        <h3>Total Stock</h3>
+        <p id="totalStock">0</p>
+    </div>
+
+    <div class="stat-box">
+        <h3>Low Stock</h3>
+        <p id="lowStock">0</p>
+    </div>
+
+</div>
+
+<div class="main-grid">
+
+    <!-- ADD PRODUCT -->
+
+    <div class="box">
+
+        <h2>➕ Add Product</h2>
+
+        <input id="name" placeholder="Product Name">
+
+        <input id="sku" placeholder="SKU">
+
+        <button onclick="addProduct()">
+            Add Product
+        </button>
+
+    </div>
+
+    <!-- UPDATE STOCK -->
+
+    <div class="box">
+
+        <h2>📦 Update Stock</h2>
+
+        <select id="product_id"></select>
+
+        <input
+            id="qty"
+            type="number"
+            placeholder="Quantity"
+        >
+
+        <select id="action">
+
+            <option value="IN">IN</option>
+
+            <option value="OUT">OUT</option>
+
+        </select>
+
+        <button onclick="updateStock()">
+            Update Stock
+        </button>
+
+    </div>
+
+    <!-- INVENTORY -->
+
+    <div class="box full-width">
+
+        <h2>📋 Inventory</h2>
+
+        <input
+            type="text"
+            id="searchInput"
+            placeholder="Search Product..."
+            onkeyup="searchInventory()"
+        >
+
+        <ul id="inventoryList"></ul>
+
+    </div>
+
+    <!-- STOCK CHART -->
+
+    <div class="box">
+
+        <h2>📊 Stock Analytics</h2>
+
+        <div class="chart-container">
+            <canvas id="stockChart"></canvas>
+        </div>
+
+    </div>
+
+    <!-- TRANSACTION CHART -->
+
+    <div class="box">
+
+        <h2>📈 Transaction Analytics</h2>
+
+        <div class="chart-container">
+            <canvas id="txnChart"></canvas>
+        </div>
+
+    </div>
+
+    <!-- TRANSACTIONS -->
+
+    <div class="box full-width">
+
+        <h2>🕒 Recent Transactions</h2>
+
+        <ul id="txnList"></ul>
+
+    </div>
+
+</div>
+
+<script>
+
+let stockChart;
+let txnChart;
+
+/* ---------------- EXPORT ---------------- */
+
+function exportInventory(){
+
+    window.location.href='/export-inventory';
+
+}
+
+function exportTransactions(){
+
+    window.location.href='/export-transactions';
+
+}
+
+/* ---------------- SEARCH ---------------- */
+
+function searchInventory(){
+
+    let input=document
+        .getElementById('searchInput')
+        .value
+        .toLowerCase();
+
+    let items=document
+        .getElementById('inventoryList')
+        .getElementsByTagName('li');
+
+    for(let i=0;i<items.length;i++){
+
+        let text=items[i].innerText.toLowerCase();
+
+        if(text.includes(input)){
+            items[i].style.display='flex';
+        }
+        else{
+            items[i].style.display='none';
+        }
+    }
+}
+
+/* ---------------- INVENTORY ---------------- */
+
+function loadInventory(){
+
+    fetch('/inventory')
+
+    .then(res=>res.json())
+
+    .then(data=>{
+
+        let list=document.getElementById('inventoryList');
+
+        let dropdown=document.getElementById('product_id');
+
+        list.innerHTML='';
+
+        dropdown.innerHTML='';
+
+        let labels=[];
+
+        let values=[];
+
+        let totalProducts=data.length;
+
+        let totalStock=0;
+
+        let lowStock=0;
+
+        data.forEach(item=>{
+
+            totalStock+=item.quantity;
+
+            if(item.quantity<5){
+                lowStock++;
+            }
+
+            let li=document.createElement('li');
+
+            if(item.quantity<5){
+                li.classList.add('low-stock');
+            }
+
+            li.innerHTML=`
+
+                <span>
+                    ${item.name} | Stock: ${item.quantity}
+                </span>
+
+                <button
+                    class="delete-btn"
+                    onclick="deleteProduct(${item.id})"
+                >
+                    Delete
+                </button>
+
+            `;
+
+            list.appendChild(li);
+
+            let opt=document.createElement('option');
+
+            opt.value=item.id;
+
+            opt.text=item.name;
+
+            dropdown.appendChild(opt);
+
+            labels.push(item.name);
+
+            values.push(item.quantity);
+
+        });
+
+        document.getElementById('totalProducts').innerText=totalProducts;
+
+        document.getElementById('totalStock').innerText=totalStock;
+
+        document.getElementById('lowStock').innerText=lowStock;
+
+        if(stockChart instanceof Chart){
+            stockChart.destroy();
+        }
+
+        stockChart=new Chart(
+
+            document.getElementById('stockChart'),
+
+            {
+                type:'bar',
+
+                data:{
+                    labels:labels,
+
+                    datasets:[{
+                        label:'Stock',
+                        data:values,
+                        backgroundColor:[
+                            '#ff00cc',
+                            '#00ffd5',
+                            '#ffcc00',
+                            '#00aaff',
+                            '#ff4444'
+                        ]
+                    }]
+                },
+
+                options:{
+                    responsive:true,
+                    maintainAspectRatio:false,
+                    plugins:{
+                        legend:{
+                            labels:{
+                                color:'white'
+                            }
+                        }
+                    },
+                    scales:{
+                        y:{
+                            ticks:{color:'white'}
+                        },
+                        x:{
+                            ticks:{color:'white'}
+                        }
+                    }
+                }
+            }
+
+        );
+
+    });
+
+}
+
+/* ---------------- TRANSACTIONS ---------------- */
+
+function loadTransactions(){
+
+    fetch('/transactions')
+
+    .then(res=>res.json())
+
+    .then(data=>{
+
+        let list=document.getElementById('txnList');
+
+        list.innerHTML='';
+
+        let inCount=0;
+
+        let outCount=0;
+
+        data.forEach(t=>{
+
+            let li=document.createElement('li');
+
+            li.innerHTML=`
+
+                <span>
+                    ${t.product_name}
+                    |
+                    ${t.type}
+                    |
+                    Qty: ${t.quantity}
+                </span>
+
+            `;
+
+            list.appendChild(li);
+
+            if(t.type==='IN'){
+                inCount++;
+            }
+            else{
+                outCount++;
+            }
+
+        });
+
+        if(txnChart instanceof Chart){
+            txnChart.destroy();
+        }
+
+        txnChart=new Chart(
+
+            document.getElementById('txnChart'),
+
+            {
+                type:'doughnut',
+
+                data:{
+                    labels:['IN','OUT'],
+
+                    datasets:[{
+                        data:[inCount,outCount],
+                        backgroundColor:[
+                            '#00ff99',
+                            '#ff4444'
+                        ]
+                    }]
+                },
+
+                options:{
+                    responsive:true,
+                    maintainAspectRatio:false,
+                    plugins:{
+                        legend:{
+                            labels:{
+                                color:'white'
+                            }
+                        }
+                    }
+                }
+
+            }
+
+        );
+
+    });
+
+}
+
+/* ---------------- ADD PRODUCT ---------------- */
+
+function addProduct(){
+
+    fetch('/add-product',{
+
+        method:'POST',
+
+        headers:{
+            'Content-Type':'application/json'
+        },
+
+        body:JSON.stringify({
+
+            name:document.getElementById('name').value,
+
+            sku:document.getElementById('sku').value
+
+        })
+
+    })
+
+    .then(()=>{
+
+        loadInventory();
+
+    });
+
+}
+
+/* ---------------- UPDATE STOCK ---------------- */
+
+function updateStock(){
+
+    fetch('/update-stock',{
+
+        method:'POST',
+
+        headers:{
+            'Content-Type':'application/json'
+        },
+
+        body:JSON.stringify({
+
+            product_id:parseInt(
+                document.getElementById('product_id').value
+            ),
+
+            quantity:parseInt(
+                document.getElementById('qty').value
+            ),
+
+            action:document.getElementById('action').value
+
+        })
+
+    })
+
+    .then(()=>{
+
+        loadInventory();
+
+        loadTransactions();
+
+    });
+
+}
+
+/* ---------------- DELETE PRODUCT ---------------- */
+
+function deleteProduct(id){
+
+    fetch('/delete-product/'+id,{
+
+        method:'DELETE'
+
+    })
+
+    .then(()=>{
+
+        loadInventory();
+
+        loadTransactions();
+
+    });
+
+}
+
+/* ---------------- AUTO LOAD ---------------- */
+
+loadInventory();
+
+loadTransactions();
+
+</script>
+
+</body>
+
+</html>
+
